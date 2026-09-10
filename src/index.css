@@ -4,22 +4,22 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 36 33% 97%;
     --foreground: 217 60% 15%;
     --card: 0 0% 100%;
     --card-foreground: 217 60% 15%;
     --primary: 217 71% 16%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 30% 94%;
+    --secondary: 30 25% 94%;
     --secondary-foreground: 217 60% 15%;
     --accent: 25 100% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --muted: 210 20% 92%;
-    --muted-foreground: 215 16% 47%;
-    --border: 214 20% 88%;
-    --radius: 0.75rem;
+    --muted: 30 20% 93%;
+    --muted-foreground: 217 20% 46%;
+    --border: 30 15% 88%;
+    --radius: 0.9rem;
   }
 }
 
@@ -28,7 +28,14 @@
   body { @apply bg-background text-foreground; font-family: 'Inter', system-ui, sans-serif; }
 }
 
-.stat-card { @apply bg-card rounded-xl shadow-sm border border-border p-5 flex flex-col gap-1; }
+.stat-card { @apply bg-card rounded-2xl shadow-sm border border-border p-5 flex flex-col gap-1 hover:shadow-md transition-shadow; }
 .badge-ok { @apply bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold; }
 .badge-bajo { @apply bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-semibold; }
 .badge-critico { @apply bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-semibold; }
+
+.icon-btn {
+  @apply relative flex items-center justify-center w-10 h-10 rounded-full bg-secondary text-navy hover:bg-orange/10 hover:text-orange transition-colors;
+}
+.notif-dot {
+  @apply absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-orange text-white text-[10px] font-bold flex items-center justify-center border-2 border-background;
+}
