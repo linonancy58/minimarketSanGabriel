@@ -33,7 +33,7 @@ export interface Usuario {
   rol: Rol
   id_local: string | null
   activo: boolean
-   avatar_url?: string | null
+  avatar_url?: string | null
 }
 
 export interface Producto {

@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import {
-  useProductos, useCategorias, useProveedores, useGuardarProducto, useGuardarCategoria, useGuardarProveedor,
-} from '@/hooks/useCatalogo'
+import { useProductos, useCategorias, useProveedores, useGuardarProducto } from '@/hooks/useCatalogo'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,60 +7,41 @@ import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
 import { Producto } from '@/lib/types'
-import { Plus, Pencil, X, Package, Tag, Truck } from 'lucide-react'
+import { Plus, Pencil, X, Search, Package } from 'lucide-react'
 
-type Tab = 'productos' | 'categorias' | 'proveedores'
+export default function ProductosPage() {
+  const { data: productos, isLoading } = useProductos()
+  const [editando, setEditando] = useState<Partial<Producto> | null>(null)
+  const [busqueda, setBusqueda] = useState('')
 
-export default function CatalogoPage() {
-  const [tab, setTab] = useState<Tab>('productos')
+  const filtrados = (productos ?? []).filter((p) =>
+    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  )
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-navy mb-1">Catálogo</h1>
-      <p className="text-sm text-muted-foreground mb-5">Productos, categorías y proveedores de la cadena.</p>
-
-      <div className="flex gap-2 mb-5">
-        <TabButton active={tab === 'productos'} onClick={() => setTab('productos')} icon={Package}>Productos</TabButton>
-        <TabButton active={tab === 'categorias'} onClick={() => setTab('categorias')} icon={Tag}>Categorías</TabButton>
-        <TabButton active={tab === 'proveedores'} onClick={() => setTab('proveedores')} icon={Truck}>Proveedores</TabButton>
-      </div>
-
-      {tab === 'productos' && <ProductosTab />}
-      {tab === 'categorias' && <CategoriasTab />}
-      {tab === 'proveedores' && <ProveedoresTab />}
-    </div>
-  )
-}
-
-function TabButton({ active, onClick, icon: Icon, children }: any) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-        active ? 'bg-navy text-white' : 'bg-secondary text-navy hover:bg-secondary/70'
-      }`}
-    >
-      <Icon size={16} /> {children}
-    </button>
-  )
-}
-
-function ProductosTab() {
-  const { data: productos, isLoading } = useProductos()
-  const [editando, setEditando] = useState<Partial<Producto> | null>(null)
-
-  return (
-    <div>
-      <div className="flex justify-end mb-3">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h1 className="text-2xl font-bold text-navy flex items-center gap-2">
+            <Package className="text-orange" size={24} /> Productos
+          </h1>
+          <p className="text-sm text-text-secondary">Catálogo maestro de productos de la cadena.</p>
+        </div>
         <Button variant="accent" onClick={() => setEditando({})}><Plus size={16} /> Nuevo producto</Button>
       </div>
-      {isLoading ? <p className="text-muted-foreground">Cargando...</p> : (
+
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-2.5 text-text-secondary" size={18} />
+        <Input placeholder="Buscar producto..." className="pl-9" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      </div>
+
+      {isLoading ? <p className="text-text-secondary">Cargando...</p> : (
         <Table>
           <THead>
             <TR><TH>Nombre</TH><TH>Categoría</TH><TH>Proveedor</TH><TH>Precio</TH><TH>Stock min/max</TH><TH></TH></TR>
           </THead>
           <TBody>
-            {productos?.map((p) => (
+            {filtrados.map((p) => (
               <TR key={p.id_producto}>
                 <TD className="font-medium text-navy">{p.nombre}</TD>
                 <TD>{p.categoria?.nombre ?? '—'}</TD>
@@ -72,6 +51,7 @@ function ProductosTab() {
                 <TD><button onClick={() => setEditando(p)}><Pencil size={16} className="text-navy" /></button></TD>
               </TR>
             ))}
+            {filtrados.length === 0 && <TR><TD colSpan={6} className="text-text-secondary">Sin resultados.</TD></TR>}
           </TBody>
         </Table>
       )}
@@ -110,7 +90,7 @@ function ModalProducto({ producto, onClose }: { producto: Partial<Producto>; onC
       <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{form.id_producto ? 'Editar producto' : 'Nuevo producto'}</CardTitle>
-          <button onClick={onClose}><X size={20} className="text-muted-foreground" /></button>
+          <button onClick={onClose}><X size={20} className="text-text-secondary" /></button>
         </CardHeader>
         <CardContent className="space-y-3">
           <Field label="Nombre"><Input value={form.nombre ?? ''} onChange={(e) => set('nombre', e.target.value)} /></Field>
@@ -138,66 +118,6 @@ function ModalProducto({ producto, onClose }: { producto: Partial<Producto>; onC
           </Button>
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-function CategoriasTab() {
-  const { data: categorias, isLoading } = useCategorias()
-  const guardar = useGuardarCategoria()
-  const [nombre, setNombre] = useState('')
-
-  return (
-    <div>
-      <div className="flex gap-2 mb-4 max-w-md">
-        <Input placeholder="Nueva categoría..." value={nombre} onChange={(e) => setNombre(e.target.value)} />
-        <Button variant="accent" onClick={() => { if (nombre) { guardar.mutate({ nombre }); setNombre('') } }}>
-          <Plus size={16} /> Agregar
-        </Button>
-      </div>
-      {isLoading ? <p className="text-muted-foreground">Cargando...</p> : (
-        <Table>
-          <THead><TR><TH>Nombre</TH><TH>Descripción</TH></TR></THead>
-          <TBody>
-            {categorias?.map((c) => (
-              <TR key={c.id_categoria}><TD className="font-medium text-navy">{c.nombre}</TD><TD>{c.descripcion ?? '—'}</TD></TR>
-            ))}
-          </TBody>
-        </Table>
-      )}
-    </div>
-  )
-}
-
-function ProveedoresTab() {
-  const { data: proveedores, isLoading } = useProveedores()
-  const guardar = useGuardarProveedor()
-  const [form, setForm] = useState({ razon_social: '', ruc: '', telefono: '' })
-
-  return (
-    <div>
-      <div className="flex gap-2 mb-4 flex-wrap">
-        <Input placeholder="Razón social" className="w-56" value={form.razon_social} onChange={(e) => setForm({ ...form, razon_social: e.target.value })} />
-        <Input placeholder="RUC" className="w-40" value={form.ruc} onChange={(e) => setForm({ ...form, ruc: e.target.value })} />
-        <Input placeholder="Teléfono" className="w-40" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
-        <Button variant="accent" onClick={() => {
-          if (form.razon_social && form.ruc) { guardar.mutate(form); setForm({ razon_social: '', ruc: '', telefono: '' }) }
-        }}>
-          <Plus size={16} /> Agregar
-        </Button>
-      </div>
-      {isLoading ? <p className="text-muted-foreground">Cargando...</p> : (
-        <Table>
-          <THead><TR><TH>Razón social</TH><TH>RUC</TH><TH>Teléfono</TH></TR></THead>
-          <TBody>
-            {proveedores?.map((p) => (
-              <TR key={p.id_proveedor}>
-                <TD className="font-medium text-navy">{p.razon_social}</TD><TD>{p.ruc}</TD><TD>{p.telefono ?? '—'}</TD>
-              </TR>
-            ))}
-          </TBody>
-        </Table>
-      )}
     </div>
   )
 }

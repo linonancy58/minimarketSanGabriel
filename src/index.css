@@ -4,21 +4,21 @@
 
 @layer base {
   :root {
-    --background: 36 33% 97%;
-    --foreground: 217 60% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 217 60% 15%;
-    --primary: 217 71% 16%;
+    --background: 216 33% 97%;   /* #F5F7FA */
+    --foreground: 208 67% 22%;   /* #12395C */
+    --card: 0 0% 100%;           /* #FFFFFF */
+    --card-foreground: 208 67% 22%;
+    --primary: 209 81% 16%;      /* #082B4C */
     --primary-foreground: 0 0% 100%;
-    --secondary: 30 25% 94%;
-    --secondary-foreground: 217 60% 15%;
-    --accent: 25 100% 50%;
+    --secondary: 216 33% 95%;
+    --secondary-foreground: 208 67% 22%;
+    --accent: 28 100% 50%;       /* #FF7900 */
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;    /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
-    --muted: 30 20% 93%;
-    --muted-foreground: 217 20% 46%;
-    --border: 30 15% 88%;
+    --muted: 216 20% 93%;
+    --muted-foreground: 216 15% 52%; /* #718096 */
+    --border: 216 20% 88%;
     --radius: 0.9rem;
   }
 }
@@ -29,9 +29,9 @@
 }
 
 .stat-card { @apply bg-card rounded-2xl shadow-sm border border-border p-5 flex flex-col gap-1 hover:shadow-md transition-shadow; }
-.badge-ok { @apply bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold; }
-.badge-bajo { @apply bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-semibold; }
-.badge-critico { @apply bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-semibold; }
+.badge-ok { @apply text-white px-2 py-0.5 rounded-full text-xs font-semibold; background-color: #22B573; }
+.badge-bajo { @apply text-white px-2 py-0.5 rounded-full text-xs font-semibold; background-color: #F59E0B; }
+.badge-critico { @apply text-white px-2 py-0.5 rounded-full text-xs font-semibold; background-color: #EF4444; }
 
 .icon-btn {
   @apply relative flex items-center justify-center w-10 h-10 rounded-full bg-secondary text-navy hover:bg-orange/10 hover:text-orange transition-colors;

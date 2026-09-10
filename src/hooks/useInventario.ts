@@ -99,3 +99,22 @@ export function useStockCritico() {
     refetchInterval: 15000,
   })
 }
+
+export function useListaCompras() {
+  const { usuario } = useAuth()
+  return useQuery({
+    queryKey: ['lista-compras', usuario?.id_local, usuario?.rol],
+    enabled: !!usuario,
+    queryFn: async () => {
+      let query = supabase
+        .from('compra')
+        .select('*, local(*), proveedor(razon_social), usuario(nombre), detalle_compra(cantidad, costo_unitario, producto(nombre))')
+        .order('fecha', { ascending: false })
+        .limit(100)
+      if (usuario?.rol !== 'gerente' && usuario?.id_local) query = query.eq('id_local', usuario.id_local)
+      const { data, error } = await query
+      if (error) throw error
+      return data
+    },
+  })
+}
