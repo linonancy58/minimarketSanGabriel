@@ -18,8 +18,8 @@
     --destructive-foreground: 0 0% 100%;
     --muted: 216 20% 93%;
     --muted-foreground: 216 15% 52%; /* #718096 */
-    --border: 216 20% 88%;
-    --radius: 0.9rem;
+    --border: 216 20% 89%;
+    --radius: 1rem;
   }
 }
 
@@ -34,7 +34,7 @@
 .badge-critico { @apply text-white px-2 py-0.5 rounded-full text-xs font-semibold; background-color: #EF4444; }
 
 .icon-btn {
-  @apply relative flex items-center justify-center w-10 h-10 rounded-full bg-secondary text-navy hover:bg-orange/10 hover:text-orange transition-colors;
+  @apply relative flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-navy hover:border-orange hover:text-orange transition-colors shadow-sm;
 }
 .notif-dot {
   @apply absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-orange text-white text-[10px] font-bold flex items-center justify-center border-2 border-background;

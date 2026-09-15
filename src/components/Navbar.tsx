@@ -9,20 +9,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 
-const SALUDOS_ROL: Record<string, string> = {
-  gerente: 'Panel gerencial',
-  cajero: 'Punto de venta',
-  almacenero: 'Gestión de inventario',
-}
-
 const ACCESOS_RAPIDOS: Record<string, { label: string; to: string }[]> = {
   gerente: [
     { label: 'Ver alertas de stock', to: '/dashboard' },
-    { label: 'Nuevo producto', to: '/catalogo' },
+    { label: 'Nuevo producto', to: '/inventario/productos' },
     { label: 'Nuevo usuario', to: '/usuarios' },
   ],
   cajero: [{ label: 'Nueva venta', to: '/pos' }],
-  almacenero: [{ label: 'Registrar compra', to: '/inventario' }],
+  almacenero: [{ label: 'Registrar compra', to: '/compras' }],
 }
 
 export default function Navbar() {
@@ -47,33 +41,29 @@ export default function Navbar() {
   }
 
   return (
-    <header className="h-20 shrink-0 bg-card border-b border-border px-6 flex items-center justify-between gap-4">
-      <div>
-        <p className="text-sm text-muted-foreground">Bienvenido de nuevo</p>
-        <h2 className="text-lg font-bold text-navy leading-tight">
-          {usuario.nombre} · <span className="text-orange">{SALUDOS_ROL[usuario.rol]}</span>
-        </h2>
-      </div>
+    <header className="h-20 shrink-0 bg-white border-b border-border px-6 flex items-center justify-between gap-4">
+      <h2 className="text-xl font-bold text-navy shrink-0">
+        Bienvenido, {usuario.nombre.split(' ')[0]} 👋
+      </h2>
 
       <div className="flex-1 max-w-md relative hidden md:block">
-        <Search className="absolute left-3 top-2.5 text-muted-foreground" size={18} />
+        <Search className="absolute left-3 top-2.5 text-text-secondary" size={18} />
         <Input
-          placeholder="Buscar productos, ventas, usuarios..."
-          className="pl-9 bg-secondary/60 border-transparent focus-visible:bg-white"
+          placeholder="Buscar productos, categorías, movimientos..."
+          className="pl-9 bg-secondary/50 border-transparent rounded-full focus-visible:bg-white focus-visible:border-border"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && busqueda.trim()) {
-              if (usuario.rol === 'gerente') navigate('/catalogo')
+              if (usuario.rol === 'gerente') navigate('/inventario/productos')
               if (usuario.rol === 'cajero') navigate('/pos')
-              if (usuario.rol === 'almacenero') navigate('/inventario')
+              if (usuario.rol === 'almacenero') navigate('/inventario/stock')
             }
           }}
         />
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        {/* Acceso rápido */}
         {accesos.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -82,7 +72,7 @@ export default function Navbar() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <DropdownMenuLabel className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
                 Acceso rápido
               </DropdownMenuLabel>
               {accesos.map((a) => (
@@ -94,7 +84,6 @@ export default function Navbar() {
           </DropdownMenu>
         )}
 
-        {/* Notificaciones */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="icon-btn" title="Notificaciones">
@@ -103,17 +92,17 @@ export default function Navbar() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72">
-            <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <DropdownMenuLabel className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
               Alertas de reposición
             </DropdownMenuLabel>
             {numAlertas === 0 ? (
-              <p className="px-3 py-4 text-sm text-muted-foreground">Sin alertas activas.</p>
+              <p className="px-3 py-4 text-sm text-text-secondary">Sin alertas activas.</p>
             ) : (
               <>
                 {stockCritico?.slice(0, 5).map((s: any) => (
                   <DropdownMenuItem key={`${s.id_producto}-${s.id_local}`} onClick={() => navigate('/dashboard')} className="flex-col items-start">
                     <span className="font-medium">{s.producto_nombre}</span>
-                    <span className="text-xs text-muted-foreground">{s.local_nombre} · {s.estado}</span>
+                    <span className="text-xs text-text-secondary">{s.local_nombre} · {s.estado}</span>
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
@@ -125,10 +114,9 @@ export default function Navbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Avatar / perfil */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-orange/30 hover:border-orange transition-colors shrink-0">
+            <button className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-border hover:border-orange transition-colors shrink-0">
               {usuario.avatar_url ? (
                 <img src={usuario.avatar_url} alt={usuario.nombre} className="w-full h-full object-cover" />
               ) : (
@@ -146,13 +134,13 @@ export default function Navbar() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>
               <p className="font-semibold text-navy text-sm">{usuario.nombre}</p>
-              <p className="text-xs text-muted-foreground capitalize">{usuario.rol}</p>
+              <p className="text-xs text-text-secondary capitalize">{usuario.rol}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
               <Camera size={14} /> Cambiar foto de perfil
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/configuracion')}>
               <User size={14} /> Mi perfil
             </DropdownMenuItem>
             <DropdownMenuSeparator />

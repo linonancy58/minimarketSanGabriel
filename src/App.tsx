@@ -1,52 +1,66 @@
-import { useState } from 'react'
-import { useProveedores, useGuardarProveedor } from '@/hooks/useCatalogo'
-import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Plus, Truck } from 'lucide-react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AuthProvider } from '@/features/auth/AuthContext'
+import LoginPage from '@/features/auth/LoginPage'
+import ProtectedRoute from '@/routes/ProtectedRoute'
+import AppLayout, { IndexRoute } from '@/routes/AppLayout'
+import DashboardPage from '@/features/dashboard/DashboardPage'
+import PosPage from '@/features/pos/PosPage'
+import ProductosPage from '@/features/catalogo/ProductosPage'
+import CategoriasPage from '@/features/catalogo/CategoriasPage'
+import StockPage from '@/features/inventario/StockPage'
+import EntradasPage from '@/features/movimientos/EntradasPage'
+import SalidasPage from '@/features/movimientos/SalidasPage'
+import ComprasPage from '@/features/compras/ComprasPage'
+import ProveedoresPage from '@/features/proveedores/ProveedoresPage'
+import ReportesPage from '@/features/reportes/ReportesPage'
+import ConfiguracionPage from '@/features/configuracion/ConfiguracionPage'
+import UsuariosPage from '@/features/usuarios/UsuariosPage'
 
-export default function ProveedoresPage() {
-  const { data: proveedores, isLoading } = useProveedores()
-  const guardar = useGuardarProveedor()
-  const [form, setForm] = useState({ razon_social: '', ruc: '', telefono: '', direccion: '' })
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 10_000, retry: 1 } },
+})
 
+export default function App() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-navy flex items-center gap-2 mb-1">
-        <Truck className="text-orange" size={24} /> Proveedores
-      </h1>
-      <p className="text-sm text-text-secondary mb-5">Empresas que abastecen a los 4 locales.</p>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
 
-      <div className="flex gap-2 mb-5 flex-wrap">
-        <Input placeholder="Razón social" className="w-56" value={form.razon_social} onChange={(e) => setForm({ ...form, razon_social: e.target.value })} />
-        <Input placeholder="RUC" className="w-40" value={form.ruc} onChange={(e) => setForm({ ...form, ruc: e.target.value })} />
-        <Input placeholder="Teléfono" className="w-40" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
-        <Input placeholder="Dirección" className="w-56" value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} />
-        <Button variant="accent" onClick={() => {
-          if (form.razon_social && form.ruc) {
-            guardar.mutate(form)
-            setForm({ razon_social: '', ruc: '', telefono: '', direccion: '' })
-          }
-        }}>
-          <Plus size={16} /> Agregar
-        </Button>
-      </div>
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route index element={<IndexRoute />} />
 
-      {isLoading ? <p className="text-text-secondary">Cargando...</p> : (
-        <Table>
-          <THead><TR><TH>Razón social</TH><TH>RUC</TH><TH>Teléfono</TH><TH>Dirección</TH></TR></THead>
-          <TBody>
-            {proveedores?.map((p) => (
-              <TR key={p.id_proveedor}>
-                <TD className="font-medium text-navy">{p.razon_social}</TD>
-                <TD>{p.ruc}</TD>
-                <TD>{p.telefono ?? '—'}</TD>
-                <TD>{p.direccion ?? '—'}</TD>
-              </TR>
-            ))}
-          </TBody>
-        </Table>
-      )}
-    </div>
+                <Route element={<ProtectedRoute roles={['gerente']} />}>
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/inventario/productos" element={<ProductosPage />} />
+                  <Route path="/inventario/categorias" element={<CategoriasPage />} />
+                  <Route path="/proveedores" element={<ProveedoresPage />} />
+                  <Route path="/reportes" element={<ReportesPage />} />
+                  <Route path="/usuarios" element={<UsuariosPage />} />
+                </Route>
+
+                <Route element={<ProtectedRoute roles={['cajero']} />}>
+                  <Route path="/pos" element={<PosPage />} />
+                </Route>
+
+                <Route element={<ProtectedRoute roles={['almacenero', 'gerente']} />}>
+                  <Route path="/inventario/stock" element={<StockPage />} />
+                  <Route path="/compras" element={<ComprasPage />} />
+                </Route>
+
+                <Route element={<ProtectedRoute roles={['gerente', 'almacenero', 'cajero']} />}>
+                  <Route path="/movimientos/entradas" element={<EntradasPage />} />
+                  <Route path="/movimientos/salidas" element={<SalidasPage />} />
+                  <Route path="/configuracion" element={<ConfiguracionPage />} />
+                </Route>
+              </Route>
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }
