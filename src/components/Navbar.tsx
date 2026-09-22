@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Bell, Zap, Camera, User, LogOut, Loader2 } from 'lucide-react'
+import { Search, Bell, Zap, Camera, User, LogOut, Loader2, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { useStockCritico } from '@/hooks/useInventario'
 import { useSubirAvatar } from '@/hooks/useAvatar'
@@ -41,16 +41,12 @@ export default function Navbar() {
   }
 
   return (
-    <header className="h-20 shrink-0 bg-white border-b border-border px-6 flex items-center justify-between gap-4">
-      <h2 className="text-xl font-bold text-navy shrink-0">
-        Bienvenido, {usuario.nombre.split(' ')[0]} 👋
-      </h2>
-
-      <div className="flex-1 max-w-md relative hidden md:block">
+    <header className="h-20 shrink-0 bg-white border-b border-border px-6 flex items-center gap-4">
+      <div className="flex-1 max-w-xl relative">
         <Search className="absolute left-3 top-2.5 text-text-secondary" size={18} />
         <Input
           placeholder="Buscar productos, categorías, movimientos..."
-          className="pl-9 bg-secondary/50 border-transparent rounded-full focus-visible:bg-white focus-visible:border-border"
+          className="pl-9 bg-white border-border rounded-lg focus-visible:bg-white"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           onKeyDown={(e) => {
@@ -116,19 +112,26 @@ export default function Navbar() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-border hover:border-orange transition-colors shrink-0">
-              {usuario.avatar_url ? (
-                <img src={usuario.avatar_url} alt={usuario.nombre} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-navy text-white flex items-center justify-center font-bold">
-                  {usuario.nombre.charAt(0).toUpperCase()}
-                </div>
-              )}
-              {subirAvatar.isPending && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-white" size={16} />
-                </div>
-              )}
+            <button className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-lg hover:bg-secondary transition-colors">
+              <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-orange/30 shrink-0">
+                {usuario.avatar_url ? (
+                  <img src={usuario.avatar_url} alt={usuario.nombre} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-navy text-white flex items-center justify-center font-bold text-sm">
+                    {usuario.nombre.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                {subirAvatar.isPending && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Loader2 className="animate-spin text-white" size={14} />
+                  </div>
+                )}
+              </div>
+              <div className="hidden sm:block text-left">
+                <p className="text-sm font-bold text-navy leading-tight">{usuario.nombre.split(' ')[0]}</p>
+                <p className="text-[11px] font-medium text-text-secondary capitalize leading-tight">{usuario.rol}</p>
+              </div>
+              <ChevronDown size={16} className="text-text-secondary hidden sm:block" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

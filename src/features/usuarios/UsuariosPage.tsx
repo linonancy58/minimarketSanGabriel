@@ -139,11 +139,14 @@ function ModalNuevoUsuario({ onClose }: { onClose: () => void }) {
               {locales?.map((l: any) => <option key={l.id_local} value={l.id_local}>{l.nombre}</option>)}
             </Select>
           )}
-          {error && <p className="text-sm text-destructive bg-red-50 rounded-lg p-2">{error}</p>}
-          {ok && <p className="text-sm text-green-700 bg-green-50 rounded-lg p-2">Usuario creado correctamente.</p>}
-          <Button variant="accent" className="w-full" onClick={crear} disabled={loading}>
-            {loading ? 'Creando...' : 'Crear usuario'}
-          </Button>
+          {error && <p className="text-sm text-destructive bg-red-50 rounded-md p-2">{error}</p>}
+          {ok && <p className="text-sm text-white bg-success rounded-md p-2">Usuario creado correctamente.</p>}
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button variant="accent" onClick={crear} disabled={loading}>
+              {loading ? 'Creando...' : 'Crear usuario'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

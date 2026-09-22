@@ -116,12 +116,15 @@ function ModalRegistrarCompra({ onClose }: { onClose: () => void }) {
             <span>Total</span><span>{formatCurrency(total)}</span>
           </div>
 
-          {error && <p className="text-sm text-destructive bg-red-50 rounded-lg p-2">{error}</p>}
-          {ok && <p className="text-sm text-white bg-success rounded-lg p-2">Compra registrada correctamente.</p>}
+          {error && <p className="text-sm text-destructive bg-red-50 rounded-md p-2">{error}</p>}
+          {ok && <p className="text-sm text-white bg-success rounded-md p-2">Compra registrada correctamente.</p>}
 
-          <Button variant="accent" className="w-full" onClick={guardar} disabled={registrarCompra.isPending}>
-            {registrarCompra.isPending ? 'Guardando...' : 'Guardar compra'}
-          </Button>
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button variant="accent" onClick={guardar} disabled={registrarCompra.isPending}>
+              {registrarCompra.isPending ? 'Guardando...' : 'Guardar compra'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

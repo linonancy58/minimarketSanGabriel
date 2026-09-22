@@ -12,7 +12,7 @@ type Item = { to: string; label: string; icon: any }
 type NavEntry = { label: string; icon: any; roles: string[] } & ({ to: string } | { children: Item[] })
 
 const NAV: NavEntry[] = [
-  { to: '/dashboard', label: 'Inicio', icon: LayoutDashboard, roles: ['gerente'] },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['gerente'] },
   { to: '/pos', label: 'Ventas (POS)', icon: ShoppingCart, roles: ['cajero'] },
   {
     label: 'Inventario', icon: Boxes, roles: ['gerente', 'almacenero'],
@@ -35,8 +35,6 @@ const NAV: NavEntry[] = [
   { to: '/usuarios', label: 'Usuarios', icon: Users, roles: ['gerente'] },
   { to: '/configuracion', label: 'Configuración', icon: Settings, roles: ['gerente', 'almacenero', 'cajero'] },
 ]
-
-const ROL_LABEL: Record<string, string> = { gerente: 'Gerente', cajero: 'Cajero', almacenero: 'Almacenero' }
 
 export default function AppLayout() {
   const { usuario, signOut } = useAuth()
@@ -62,41 +60,25 @@ export default function AppLayout() {
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
-      <aside className="w-72 bg-white border-r border-border flex flex-col shrink-0 overflow-y-auto">
+      <aside className="w-72 bg-orange flex flex-col shrink-0 overflow-y-auto relative">
+        {/* Marca de agua decorativa */}
+        <ShoppingBasket size={220} className="absolute -bottom-10 -left-10 text-white/10 pointer-events-none" />
+
         {/* Logo */}
-        <div className="p-6 border-b border-border">
+        <div className="px-6 py-6 relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-orange flex items-center justify-center shadow-sm shrink-0">
-              <ShoppingBasket size={22} className="text-white" />
+            <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm">
+              <ShoppingBasket size={22} className="text-orange" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-navy leading-tight">San Gabriel</h1>
-              <p className="text-xs text-text-secondary">Sistema de Gestión</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Usuario */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            {usuario.avatar_url ? (
-              <img src={usuario.avatar_url} alt={usuario.nombre} className="w-10 h-10 rounded-full object-cover shrink-0" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-navy text-white flex items-center justify-center text-sm font-bold shrink-0">
-                {usuario.nombre.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-navy truncate">{usuario.nombre}</p>
-              <span className="inline-block text-xs px-2 py-0.5 rounded-full font-medium bg-orange/10 text-orange">
-                {ROL_LABEL[usuario.rol]}
-              </span>
+              <h1 className="text-lg font-extrabold text-white leading-tight">San Gabriel</h1>
+              <p className="text-xs text-white/80">Sistema de Gestión</p>
             </div>
           </div>
         </div>
 
         {/* Menú */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 px-3 py-2 space-y-1 relative z-10">
           {visibles.map((item) => {
             if ('to' in item) {
               return (
@@ -105,10 +87,10 @@ export default function AppLayout() {
                   to={item.to}
                   className={({ isActive }) =>
                     cn(
-                      'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
+                      'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors',
                       isActive
-                        ? 'bg-orange/10 text-orange border border-orange/20'
-                        : 'text-navy/70 hover:bg-secondary border border-transparent'
+                        ? 'bg-white text-orange shadow-sm'
+                        : 'text-white/90 hover:bg-white/10'
                     )
                   }
                 >
@@ -126,8 +108,8 @@ export default function AppLayout() {
                 <button
                   onClick={() => toggle(item.label)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all border',
-                    algunoActivo ? 'bg-orange/10 text-orange border-orange/20' : 'text-navy/70 hover:bg-secondary border-transparent'
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors',
+                    algunoActivo ? 'bg-white text-orange shadow-sm' : 'text-white/90 hover:bg-white/10'
                   )}
                 >
                   <item.icon size={18} />
@@ -135,19 +117,19 @@ export default function AppLayout() {
                   <ChevronDown size={16} className={cn('transition-transform', abierto && 'rotate-180')} />
                 </button>
                 {abierto && (
-                  <div className="ml-4 mt-1 pl-3 border-l-2 border-border space-y-1">
+                  <div className="ml-4 mt-1 pl-3 border-l-2 border-white/25 space-y-0.5">
                     {item.children.map((c) => (
                       <NavLink
                         key={c.to}
                         to={c.to}
                         className={({ isActive }) =>
                           cn(
-                            'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
-                            isActive ? 'bg-orange/10 text-orange font-medium' : 'text-text-secondary hover:bg-secondary hover:text-navy'
+                            'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                            isActive ? 'bg-white/15 text-white font-bold' : 'text-white/75 hover:bg-white/10 hover:text-white'
                           )
                         }
                       >
-                        <c.icon size={15} />
+                        <c.icon size={14} />
                         {c.label}
                       </NavLink>
                     ))}
@@ -159,10 +141,10 @@ export default function AppLayout() {
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-border">
+        <div className="p-4 relative z-10">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-red-50 transition-all"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-white/90 hover:bg-white/10 transition-colors"
           >
             <LogOut size={18} />
             Cerrar sesión

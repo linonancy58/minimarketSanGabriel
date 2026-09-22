@@ -112,10 +112,13 @@ function ModalProducto({ producto, onClose }: { producto: Partial<Producto>; onC
             <Field label="Stock mínimo"><Input type="number" value={form.stock_minimo ?? 0} onChange={(e) => set('stock_minimo', Number(e.target.value))} /></Field>
             <Field label="Stock máximo"><Input type="number" value={form.stock_maximo ?? ''} onChange={(e) => set('stock_maximo', Number(e.target.value))} /></Field>
           </div>
-          {error && <p className="text-sm text-destructive bg-red-50 rounded-lg p-2">{error}</p>}
-          <Button variant="accent" className="w-full" onClick={onGuardar} disabled={guardar.isPending}>
-            {guardar.isPending ? 'Guardando...' : 'Guardar'}
-          </Button>
+          {error && <p className="text-sm text-destructive bg-red-50 rounded-md p-2">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button variant="accent" onClick={onGuardar} disabled={guardar.isPending}>
+              {guardar.isPending ? 'Guardando...' : 'Guardar producto'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
