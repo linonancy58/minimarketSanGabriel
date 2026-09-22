@@ -1,0 +1,27 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Se ejecuta cada 3 días a las 09:00 UTC (Supabase pausa proyectos gratuitos tras 7 días sin actividad)
+    - cron: '0 9 */3 * *'
+  workflow_dispatch: {} # permite ejecutarlo manualmente desde la pestaña Actions
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hacer una consulta liviana a Supabase
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/local?select=id_local&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+
+          echo "Código de respuesta de Supabase: $response"
+
+          if [ "$response" -ge 200 ] && [ "$response" -lt 300 ]; then
+            echo "✅ Supabase respondió correctamente, el proyecto sigue activo."
+          else
+            echo "⚠️ Supabase respondió con código $response. Revisa que el proyecto no esté pausado manualmente."
+            exit 1
+          fi
