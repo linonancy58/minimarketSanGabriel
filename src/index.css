@@ -18,24 +18,29 @@
     --destructive-foreground: 0 0% 100%;
     --muted: 216 20% 93%;
     --muted-foreground: 216 15% 52%; /* #718096 */
-    --border: 216 20% 89%;
-    --radius: 1rem;
+    --border: 216 15% 85%;
+    --radius: 0.5rem;
   }
 }
 
 @layer base {
   * { @apply border-border; }
   body { @apply bg-background text-foreground; font-family: 'Inter', system-ui, sans-serif; }
+  h1, h2, h3 { @apply tracking-tight; }
 }
 
-.stat-card { @apply bg-card rounded-2xl shadow-sm border border-border p-5 flex flex-col gap-1 hover:shadow-md transition-shadow; }
-.badge-ok { @apply text-white px-2 py-0.5 rounded-full text-xs font-semibold; background-color: #22B573; }
-.badge-bajo { @apply text-white px-2 py-0.5 rounded-full text-xs font-semibold; background-color: #F59E0B; }
-.badge-critico { @apply text-white px-2 py-0.5 rounded-full text-xs font-semibold; background-color: #EF4444; }
+.stat-card { @apply bg-card rounded-lg shadow-sm border border-border p-5 flex flex-col gap-1 hover:shadow-md transition-shadow; }
+.badge-ok { @apply text-white px-2 py-0.5 rounded text-xs font-bold tracking-wide uppercase; background-color: #22B573; }
+.badge-bajo { @apply text-white px-2 py-0.5 rounded text-xs font-bold tracking-wide uppercase; background-color: #F59E0B; }
+.badge-critico { @apply text-white px-2 py-0.5 rounded text-xs font-bold tracking-wide uppercase; background-color: #EF4444; }
 
 .icon-btn {
-  @apply relative flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-navy hover:border-orange hover:text-orange transition-colors shadow-sm;
+  @apply relative flex items-center justify-center w-10 h-10 rounded-md bg-white border border-border text-navy hover:border-navy hover:bg-secondary transition-colors;
 }
 .notif-dot {
-  @apply absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-orange text-white text-[10px] font-bold flex items-center justify-center border-2 border-background;
+  @apply absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white;
+}
+
+.eyebrow {
+  @apply text-[11px] font-bold uppercase tracking-wider text-text-secondary;
 }

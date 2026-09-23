@@ -98,7 +98,7 @@ export default function PosPage() {
               <button
                 key={p.id_producto}
                 onClick={() => agregar(p)}
-                className="text-left bg-card border border-border rounded-xl p-4 hover:border-orange hover:shadow-md transition-all"
+                                className="text-left bg-card border border-border rounded-md p-4 hover:border-orange hover:shadow-md transition-all"
               >
                 <p className="font-semibold text-navy text-sm mb-1 line-clamp-2">{p.nombre}</p>
                 <p className="text-xs text-muted-foreground mb-2">{p.categoria?.nombre}</p>

@@ -41,12 +41,12 @@ export default function Navbar() {
   }
 
   return (
-    <header className="h-20 shrink-0 bg-white border-b border-border px-6 flex items-center gap-4">
+    <header className="h-20 shrink-0 bg-[#9A3412] px-6 flex items-center gap-4">
       <div className="flex-1 max-w-xl relative">
         <Search className="absolute left-3 top-2.5 text-text-secondary" size={18} />
         <Input
           placeholder="Buscar productos, categorías, movimientos..."
-          className="pl-9 bg-white border-border rounded-lg focus-visible:bg-white"
+          className="pl-9 bg-white border-none rounded-md shadow-sm focus-visible:ring-2 focus-visible:ring-white/60"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           onKeyDown={(e) => {
@@ -59,7 +59,7 @@ export default function Navbar() {
         />
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-2 shrink-0 ml-auto">
         {accesos.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -112,8 +112,8 @@ export default function Navbar() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-lg hover:bg-secondary transition-colors">
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-orange/30 shrink-0">
+            <button className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-md hover:bg-white/10 transition-colors">
+              <div className="relative w-10 h-10 rounded-md overflow-hidden border-2 border-white/40 shrink-0">
                 {usuario.avatar_url ? (
                   <img src={usuario.avatar_url} alt={usuario.nombre} className="w-full h-full object-cover" />
                 ) : (
@@ -128,10 +128,10 @@ export default function Navbar() {
                 )}
               </div>
               <div className="hidden sm:block text-left">
-                <p className="text-sm font-bold text-navy leading-tight">{usuario.nombre.split(' ')[0]}</p>
-                <p className="text-[11px] font-medium text-text-secondary capitalize leading-tight">{usuario.rol}</p>
+                <p className="text-sm font-extrabold text-white leading-tight">{usuario.nombre.split(' ')[0]}</p>
+                <p className="text-[11px] font-semibold text-white/75 uppercase tracking-wide leading-tight">{usuario.rol}</p>
               </div>
-              <ChevronDown size={16} className="text-text-secondary hidden sm:block" />
+              <ChevronDown size={16} className="text-white/80 hidden sm:block" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
