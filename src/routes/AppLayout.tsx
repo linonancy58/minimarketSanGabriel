@@ -2,39 +2,10 @@ import { useState } from 'react'
 import { NavLink, Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import Navbar from '@/components/Navbar'
-import {
-  LayoutDashboard, ShoppingCart, Boxes, Package, Tag, Users, ShoppingBasket,
-  ArrowDownCircle, ArrowUpCircle, ShoppingBag, Truck, BarChart3, Settings, ChevronDown, LogOut,
-} from 'lucide-react'
+import BottomNav from '@/components/BottomNav'
+import { navParaRol } from '@/lib/nav'
+import { ShoppingBasket, ChevronDown, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-type Item = { to: string; label: string; icon: any }
-type NavEntry = { label: string; icon: any; roles: string[] } & ({ to: string } | { children: Item[] })
-
-const NAV: NavEntry[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['gerente'] },
-  { to: '/pos', label: 'Ventas (POS)', icon: ShoppingCart, roles: ['cajero'] },
-  {
-    label: 'Inventario', icon: Boxes, roles: ['gerente', 'almacenero'],
-    children: [
-      { to: '/inventario/productos', label: 'Productos', icon: Package },
-      { to: '/inventario/stock', label: 'Stock', icon: Boxes },
-      { to: '/inventario/categorias', label: 'Categorías', icon: Tag },
-    ],
-  },
-  {
-    label: 'Movimientos', icon: ArrowDownCircle, roles: ['gerente', 'almacenero', 'cajero'],
-    children: [
-      { to: '/movimientos/entradas', label: 'Entradas', icon: ArrowDownCircle },
-      { to: '/movimientos/salidas', label: 'Salidas', icon: ArrowUpCircle },
-    ],
-  },
-  { to: '/compras', label: 'Compras', icon: ShoppingBag, roles: ['gerente', 'almacenero'] },
-  { to: '/proveedores', label: 'Proveedores', icon: Truck, roles: ['gerente'] },
-  { to: '/reportes', label: 'Reportes', icon: BarChart3, roles: ['gerente'] },
-  { to: '/usuarios', label: 'Usuarios', icon: Users, roles: ['gerente'] },
-  { to: '/configuracion', label: 'Configuración', icon: Settings, roles: ['gerente', 'almacenero', 'cajero'] },
-]
 
 export default function AppLayout() {
   const { usuario, signOut } = useAuth()
@@ -47,7 +18,7 @@ export default function AppLayout() {
 
   if (!usuario) return null
 
-  const visibles = NAV.filter((item) => item.roles.includes(usuario.rol))
+  const visibles = navParaRol(usuario.rol)
 
   function toggle(label: string) {
     setAbiertos((prev) => ({ ...prev, [label]: !prev[label] }))
@@ -60,8 +31,7 @@ export default function AppLayout() {
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
-      <aside className="w-72 bg-gradient-to-b from-[#C2410C] to-[#7C2D12] flex flex-col shrink-0 overflow-y-auto">
-        {/* Logo */}
+      <aside className="hidden md:flex w-72 bg-gradient-to-b from-[#C2410C] to-[#7C2D12] flex-col shrink-0 overflow-y-auto">
         <div className="px-5 py-5 border-b border-white/15">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-white flex items-center justify-center shrink-0">
@@ -74,7 +44,6 @@ export default function AppLayout() {
           </div>
         </div>
 
-        {/* Menú */}
         <nav className="flex-1 px-3 py-3 space-y-1">
           <p className="px-2 mb-2 text-[10px] font-extrabold uppercase tracking-widest text-white/50">Menú principal</p>
           {visibles.map((item) => {
@@ -86,9 +55,7 @@ export default function AppLayout() {
                   className={({ isActive }) =>
                     cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-bold transition-colors',
-                      isActive
-                        ? 'bg-white text-[#C2410C]'
-                        : 'text-white/90 hover:bg-white/10'
+                      isActive ? 'bg-white text-[#C2410C]' : 'text-white/90 hover:bg-white/10'
                     )
                   }
                 >
@@ -138,7 +105,6 @@ export default function AppLayout() {
           })}
         </nav>
 
-        {/* Logout */}
         <div className="p-4 border-t border-white/15">
           <button
             onClick={handleLogout}
@@ -152,9 +118,10 @@ export default function AppLayout() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <Outlet />
         </main>
+        <BottomNav />
       </div>
     </div>
   )

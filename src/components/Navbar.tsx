@@ -41,12 +41,12 @@ export default function Navbar() {
   }
 
   return (
-    <header className="h-20 shrink-0 bg-[#9A3412] px-6 flex items-center gap-4">
+    <header className="h-16 md:h-20 shrink-0 bg-[#9A3412] px-3 md:px-6 flex items-center gap-3 md:gap-4">
       <div className="flex-1 max-w-xl relative">
         <Search className="absolute left-3 top-2.5 text-text-secondary" size={18} />
         <Input
           placeholder="Buscar productos, categorías, movimientos..."
-          className="pl-9 bg-white border-none rounded-md shadow-sm focus-visible:ring-2 focus-visible:ring-white/60"
+          className="pl-9 bg-white border-none rounded-md shadow-sm focus-visible:ring-2 focus-visible:ring-white/60 text-sm"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           onKeyDown={(e) => {
@@ -63,7 +63,7 @@ export default function Navbar() {
         {accesos.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="icon-btn" title="Acceso rápido">
+              <button className="icon-btn hidden md:flex" title="Acceso rápido">
                 <Zap size={18} />
               </button>
             </DropdownMenuTrigger>
