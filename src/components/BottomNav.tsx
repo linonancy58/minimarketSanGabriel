@@ -29,7 +29,7 @@ export default function BottomNav() {
   return (
     <>
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border pb-[env(safe-area-inset-bottom,0px)]">
-        <div className="grid" style={{ gridTemplateColumns: `repeat(${principales.length + 1}, minmax(0,1fr))` }}>
+                <div className="grid" style={{ gridTemplateColumns: `repeat(${principales.length + (resto.length > 0 ? 1 : 0)}, minmax(0,1fr))` }}>
           {principales.map((item) => {
             if ('to' in item) {
               return (
