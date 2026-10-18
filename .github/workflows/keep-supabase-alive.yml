@@ -2,26 +2,68 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    # Se ejecuta cada 3 días a las 09:00 UTC (Supabase pausa proyectos gratuitos tras 7 días sin actividad)
-    - cron: '0 9 */3 * *'
+    # Todos los días a las 09:00 UTC (04:00 Lima). Supabase pausa proyectos gratuitos
+    # tras 7 días sin actividad; con un ping diario un fallo aislado no pone en riesgo el proyecto.
+    - cron: '0 9 * * *'
   workflow_dispatch: {} # permite ejecutarlo manualmente desde la pestaña Actions
 
 jobs:
   ping-supabase:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # Tabla liviana para el ping (cualquier tabla expuesta por la API sirve)
+      PING_TABLE: categoria
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
+      - name: Validar secrets
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Faltan los secrets SUPABASE_URL y/o SUPABASE_ANON_KEY (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          # Normaliza: sin espacios ni barra final
+          url=$(echo "$SUPABASE_URL" | tr -d '[:space:]' | sed 's:/*$::')
+          case "$url" in
+            https://*.supabase.co) ;;
+            *) echo "::error::SUPABASE_URL debe tener la forma https://<id>.supabase.co"; exit 1 ;;
+          esac
+          echo "SUPABASE_URL=$url" >> "$GITHUB_ENV"
+
       - name: Hacer una consulta liviana a Supabase
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/local?select=id_local&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          set +e
+          # --retry-all-errors reintenta también fallos de DNS/red (exit 6, 7, 28...)
+          response=$(curl -sS -o /dev/null -w "%{http_code}" \
+            --retry 5 --retry-delay 15 --retry-all-errors --max-time 30 \
+            "$SUPABASE_URL/rest/v1/$PING_TABLE?select=*&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          code=$?
+          set -e
+
+          if [ $code -ne 0 ]; then
+            case $code in
+              6)  echo "::error::No se pudo resolver el host de Supabase. El proyecto probablemente está PAUSADO: restáuralo desde el dashboard de supabase.com (Project → Restore)." ;;
+              7)  echo "::error::No se pudo conectar con Supabase (conexión rechazada)." ;;
+              28) echo "::error::Supabase no respondió a tiempo (timeout)." ;;
+              *)  echo "::error::curl falló con código $code." ;;
+            esac
+            exit 1
+          fi
 
           echo "Código de respuesta de Supabase: $response"
 
           if [ "$response" -ge 200 ] && [ "$response" -lt 300 ]; then
             echo "✅ Supabase respondió correctamente, el proyecto sigue activo."
+          elif [ "$response" = "404" ]; then
+            echo "::error::La tabla '$PING_TABLE' no existe o no está expuesta en la API (404). ¿Se renombró o borró? Ajusta PING_TABLE."
+            exit 1
+          elif [ "$response" = "401" ] || [ "$response" = "403" ]; then
+            echo "::error::Supabase rechazó la API key ($response). Revisa que SUPABASE_ANON_KEY sea la anon key actual del proyecto."
+            exit 1
           else
-            echo "⚠️ Supabase respondió con código $response. Revisa que el proyecto no esté pausado manualmente."
+            echo "::error::Supabase respondió con código $response. Revisa el estado del proyecto en supabase.com."
             exit 1
           fi

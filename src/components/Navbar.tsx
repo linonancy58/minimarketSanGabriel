@@ -1,36 +1,45 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Bell, LayoutGrid, HelpCircle, Camera, User, LogOut, Loader2, ChevronDown } from 'lucide-react'
+import {
+  Search, LayoutGrid, HelpCircle, Camera, User, LogOut, Loader2, ChevronDown,
+  Sun, Moon, Monitor, Download, Check,
+} from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthContext'
-import { useStockCritico } from '@/hooks/useInventario'
 import { useSubirAvatar } from '@/hooks/useAvatar'
+import { useInstallPrompt } from '@/hooks/usePwa'
+import { useTheme, Theme } from '@/lib/theme'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
+import { InputWithIcon } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { BrandMark } from '@/components/Brand'
+import { Avatar, ROL_LABEL } from '@/components/Avatar'
+import Notificaciones from '@/components/Notificaciones'
+import { accesosParaRol } from '@/lib/accesos'
+import { cn } from '@/lib/utils'
 
-const ACCESOS_RAPIDOS: Record<string, { label: string; to: string }[]> = {
-  gerente: [
-    { label: 'Ver alertas de stock', to: '/dashboard' },
-    { label: 'Nuevo producto', to: '/inventario/productos' },
-    { label: 'Nuevo usuario', to: '/usuarios' },
-  ],
-  cajero: [{ label: 'Nueva venta', to: '/pos' }],
-  almacenero: [{ label: 'Registrar compra', to: '/compras' }],
-}
+const TEMAS: { value: Theme; label: string; icon: React.ElementType }[] = [
+  { value: 'light', label: 'Claro', icon: Sun },
+  { value: 'dark', label: 'Oscuro', icon: Moon },
+  { value: 'system', label: 'Sistema', icon: Monitor },
+]
+
+const iconBtn =
+  'relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground'
 
 export default function Navbar() {
   const { usuario, signOut, refrescarPerfil } = useAuth()
   const navigate = useNavigate()
-  const { data: stockCritico } = useStockCritico()
   const subirAvatar = useSubirAvatar()
+  const { theme, resolved, setTheme } = useTheme()
+  const { disponible: puedeInstalar, instalar } = useInstallPrompt()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [busqueda, setBusqueda] = useState('')
 
   if (!usuario) return null
 
-  const numAlertas = usuario.rol === 'gerente' ? (stockCritico?.length ?? 0) : 0
-  const accesos = ACCESOS_RAPIDOS[usuario.rol] ?? []
+  const accesos = accesosParaRol(usuario.rol)
 
   async function onSeleccionarFoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -41,12 +50,14 @@ export default function Navbar() {
   }
 
   return (
-    <header className="h-16 md:h-20 shrink-0 bg-[#9A3412] px-3 md:px-6 flex items-center gap-3 md:gap-4">
-      <div className="flex-1 max-w-xl relative">
-        <Search className="absolute left-3 top-2.5 text-text-secondary" size={18} />
-        <Input
-          placeholder="Buscar productos, categorías, movimientos..."
-          className="pl-9 bg-white border-none rounded-md shadow-sm focus-visible:ring-2 focus-visible:ring-white/60 text-sm"
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card/85 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md md:px-6">
+      <BrandMark className="h-8 w-8 md:hidden" size={16} />
+
+      <div className="hidden max-w-md flex-1 sm:block">
+        <InputWithIcon
+          icon={Search}
+          placeholder="Buscar productos, categorías, movimientos…"
+          className="h-9 border-transparent bg-muted shadow-none hover:border-transparent focus-visible:bg-card"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           onKeyDown={(e) => {
@@ -59,119 +70,120 @@ export default function Navbar() {
         />
       </div>
 
-      <div className="flex items-center gap-2 shrink-0 ml-auto">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        {puedeInstalar && (
+          <Button variant="outline" size="sm" onClick={instalar} className="mr-1 hidden sm:inline-flex">
+            <Download size={14} /> Instalar app
+          </Button>
+        )}
+
         {accesos.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="icon-btn hidden md:flex" title="Acceso rápido">
+              <button className={iconBtn} title="Acceso rápido" aria-label="Acceso rápido">
                 <LayoutGrid size={18} />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
-                Acceso rápido
-              </DropdownMenuLabel>
-              {accesos.map((a) => (
-                <DropdownMenuItem key={a.to} onClick={() => navigate(a.to)}>
-                  <LayoutGrid size={14} className="text-orange" /> {a.label}
-                </DropdownMenuItem>
-              ))}
+            <DropdownMenuContent align="end" className="w-[min(340px,calc(100vw-2rem))] p-2">
+              <DropdownMenuLabel className="eyebrow px-2 pb-2 pt-1">Acceso rápido</DropdownMenuLabel>
+              <div className="grid grid-cols-2 gap-1">
+                {accesos.map((a) => (
+                  <DropdownMenuItem
+                    key={a.to}
+                    onClick={() => navigate(a.to)}
+                    className="group flex-col items-start gap-2 rounded-lg p-3 [&_svg]:text-primary"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft transition-colors group-focus:bg-primary group-focus:[&_svg]:text-primary-foreground">
+                      <a.icon size={16} />
+                    </span>
+                    <span className="leading-tight">
+                      <span className="block text-[13px] font-semibold">{a.label}</span>
+                      <span className="block text-2xs text-muted-foreground">{a.desc}</span>
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="icon-btn hidden md:flex" title="Ayuda">
+            <button className={iconBtn} title="Tema" aria-label="Cambiar tema">
+              {resolved === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[180px]">
+            <DropdownMenuLabel className="eyebrow">Apariencia</DropdownMenuLabel>
+            {TEMAS.map((t) => (
+              <DropdownMenuItem key={t.value} onClick={() => setTheme(t.value)}>
+                <t.icon size={15} /> <span className="flex-1">{t.label}</span>
+                {theme === t.value && <Check size={15} className="!text-primary" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className={cn(iconBtn, 'hidden md:flex')} title="Ayuda" aria-label="Ayuda">
               <HelpCircle size={18} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72">
-            <DropdownMenuLabel className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
-              Ayuda rápida
-            </DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigate('/dashboard')}>
-              Gestionar ventas y stock
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/compras')}>
-              Registrar un ingreso de mercadería
-            </DropdownMenuItem>
+            <DropdownMenuLabel className="eyebrow">Ayuda rápida</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => navigate('/dashboard')}>Gestionar ventas y stock</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/compras')}>Registrar un ingreso de mercadería</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <p className="px-3 py-2 text-xs text-text-secondary">
-              ¿Necesitas más ayuda? Contacta a soporte técnico de San Gabriel.
-            </p>
+            <p className="px-2.5 py-2 text-xs text-muted-foreground">¿Necesitas más ayuda? Contacta a soporte técnico de San Gabriel.</p>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="icon-btn" title="Notificaciones">
-              <Bell size={18} />
-              {numAlertas > 0 && <span className="notif-dot">{numAlertas > 9 ? '9+' : numAlertas}</span>}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72">
-            <DropdownMenuLabel className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
-              Alertas de reposición
-            </DropdownMenuLabel>
-            {numAlertas === 0 ? (
-              <p className="px-3 py-4 text-sm text-text-secondary">Sin alertas activas.</p>
-            ) : (
-              <>
-                {stockCritico?.slice(0, 5).map((s: any) => (
-                  <DropdownMenuItem key={`${s.id_producto}-${s.id_local}`} onClick={() => navigate('/dashboard')} className="flex-col items-start">
-                    <span className="font-medium">{s.producto_nombre}</span>
-                    <span className="text-xs text-text-secondary">{s.local_nombre} · {s.estado}</span>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/dashboard')} className="justify-center text-orange font-medium">
-                  Ver todas en el dashboard
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Notificaciones />
+
+        <div className="mx-1 hidden h-6 w-px bg-border md:block" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-md hover:bg-white/10 transition-colors">
-              <div className="relative w-10 h-10 rounded-md overflow-hidden border-2 border-white/40 shrink-0">
-                {usuario.avatar_url ? (
-                  <img src={usuario.avatar_url} alt={usuario.nombre} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-navy text-white flex items-center justify-center font-bold text-sm">
-                    {usuario.nombre.charAt(0).toUpperCase()}
-                  </div>
-                )}
+            <button className="flex items-center gap-2.5 rounded-lg p-1 pr-1.5 transition-colors hover:bg-accent data-[state=open]:bg-accent md:pr-2">
+              <span className="relative">
+                <Avatar nombre={usuario.nombre} url={usuario.avatar_url} className="h-8 w-8 ring-0" />
                 {subirAvatar.isPending && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
                     <Loader2 className="animate-spin text-white" size={14} />
-                  </div>
+                  </span>
                 )}
-              </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-sm font-extrabold text-white leading-tight">{usuario.nombre.split(' ')[0]}</p>
-                <p className="text-[11px] font-semibold text-white/75 uppercase tracking-wide leading-tight">{usuario.rol}</p>
-              </div>
-              <ChevronDown size={16} className="text-white/80 hidden sm:block" />
+              </span>
+              <span className="hidden text-left leading-tight lg:block">
+                <span className="block text-[13px] font-semibold">{usuario.nombre.split(' ')[0]}</span>
+                <span className="block text-2xs text-muted-foreground">{ROL_LABEL[usuario.rol] ?? usuario.rol}</span>
+              </span>
+              <ChevronDown size={14} className="hidden text-muted-foreground lg:block" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>
-              <p className="font-semibold text-navy text-sm">{usuario.nombre}</p>
-              <p className="text-xs text-text-secondary capitalize">{usuario.rol}</p>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel className="flex items-center gap-3">
+              <Avatar nombre={usuario.nombre} url={usuario.avatar_url} className="h-10 w-10 ring-0" />
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold">{usuario.nombre}</span>
+                <span className="block text-xs text-muted-foreground">{ROL_LABEL[usuario.rol] ?? usuario.rol}</span>
+              </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <Camera size={14} /> Cambiar foto de perfil
+              <Camera size={15} /> Cambiar foto de perfil
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/configuracion')}>
-              <User size={14} /> Mi perfil
+              <User size={15} /> Mi perfil
             </DropdownMenuItem>
+            {puedeInstalar && (
+              <DropdownMenuItem onClick={instalar} className="sm:hidden">
+                <Download size={15} /> Instalar app
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={signOut} className="text-destructive hover:bg-red-50">
-              <LogOut size={14} /> Cerrar sesión
+            <DropdownMenuItem onClick={signOut} className="text-destructive focus:bg-destructive-soft [&_svg]:text-destructive">
+              <LogOut size={15} /> Cerrar sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -14,12 +14,14 @@ export function useRegistrarVenta() {
   const { usuario } = useAuth()
 
   return useMutation({
-    mutationFn: async ({ items, id_cliente }: { items: ItemCarrito[]; id_cliente?: string | null }) => {
-      if (!usuario?.id_local) throw new Error('El usuario no tiene local asignado')
+    mutationFn: async ({ items, id_cliente, id_local }: { items: ItemCarrito[]; id_cliente?: string | null; id_local?: string }) => {
+      // El gerente no tiene local fijo: elige en qué local se registra la venta
+      const local = usuario?.id_local ?? id_local
+      if (!local) throw new Error('Selecciona el local donde se registra la venta.')
 
       const { data: venta, error: errVenta } = await supabase
         .from('venta')
-        .insert({ id_local: usuario.id_local, id_usuario: usuario.id_usuario, id_cliente: id_cliente ?? null })
+        .insert({ id_local: local, id_usuario: usuario!.id_usuario, id_cliente: id_cliente ?? null })
         .select()
         .single()
       if (errVenta) throw errVenta

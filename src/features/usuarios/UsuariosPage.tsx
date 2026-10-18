@@ -2,13 +2,18 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabaseClient'
 import { useLocales } from '@/hooks/useVentas'
-import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table'
+import { Table, THead, TBody, TR, TH, TD, TEmpty } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Field } from '@/components/ui/label'
+import { Modal } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Alert, PageHeader } from '@/components/ui/page'
+import { Avatar, ROL_LABEL } from '@/components/Avatar'
 import { Rol, Usuario } from '@/lib/types'
-import { UserPlus, X } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
+import { useAbrirSiNuevo } from '@/lib/accesos'
 
 function useUsuarios() {
   return useQuery({
@@ -36,37 +41,45 @@ export default function UsuariosPage() {
   const { data: usuarios, isLoading } = useUsuarios()
   const cambiarEstado = useCambiarEstadoUsuario()
   const [mostrarAlta, setMostrarAlta] = useState(false)
+  useAbrirSiNuevo(() => setMostrarAlta(true))
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-navy">Usuarios</h1>
-          <p className="text-sm text-muted-foreground">Cajeros, almaceneros y gerentes de los 4 locales.</p>
-        </div>
-        <Button variant="accent" onClick={() => setMostrarAlta(true)}><UserPlus size={16} /> Nuevo usuario</Button>
-      </div>
+    <div className="page">
+      <PageHeader
+        title="Usuarios"
+        description="Cajeros, almaceneros y gerentes de los 4 locales."
+        actions={<Button onClick={() => setMostrarAlta(true)}><UserPlus size={16} /> Nuevo usuario</Button>}
+      />
 
-      {isLoading ? <p className="text-muted-foreground">Cargando...</p> : (
-        <Table>
-          <THead><TR><TH>Nombre</TH><TH>Rol</TH><TH>Local</TH><TH>Estado</TH><TH></TH></TR></THead>
-          <TBody>
-            {usuarios?.map((u) => (
+      <Table>
+        <THead><TR><TH>Usuario</TH><TH>Rol</TH><TH>Local</TH><TH>Estado</TH><TH className="text-right">Acciones</TH></TR></THead>
+        <TBody>
+          {isLoading ? (
+            <TEmpty colSpan={5}>Cargando…</TEmpty>
+          ) : !usuarios?.length ? (
+            <TEmpty colSpan={5}>Aún no hay usuarios.</TEmpty>
+          ) : (
+            usuarios.map((u) => (
               <TR key={u.id_usuario}>
-                <TD className="font-medium text-navy">{u.nombre}</TD>
-                <TD className="capitalize">{u.rol}</TD>
-                <TD>{u.local?.nombre ?? '— (todos)'}</TD>
-                <TD>{u.activo ? <span className="badge-ok">Activo</span> : <span className="badge-critico">Inactivo</span>}</TD>
                 <TD>
+                  <div className="flex items-center gap-3">
+                    <Avatar nombre={u.nombre} url={u.avatar_url} className="h-8 w-8 ring-0" />
+                    <span className="font-medium text-foreground">{u.nombre}</span>
+                  </div>
+                </TD>
+                <TD><Badge tone={u.rol === 'gerente' ? 'primary' : 'neutral'}>{ROL_LABEL[u.rol] ?? u.rol}</Badge></TD>
+                <TD className="text-muted-foreground">{u.local?.nombre ?? 'Todos los locales'}</TD>
+                <TD>{u.activo ? <Badge tone="success" dot>Activo</Badge> : <Badge tone="danger" dot>Inactivo</Badge>}</TD>
+                <TD className="text-right">
                   <Button size="sm" variant="outline" onClick={() => cambiarEstado.mutate({ id_usuario: u.id_usuario, activo: !u.activo })}>
                     {u.activo ? 'Desactivar' : 'Activar'}
                   </Button>
                 </TD>
               </TR>
-            ))}
-          </TBody>
-        </Table>
-      )}
+            ))
+          )}
+        </TBody>
+      </Table>
 
       {mostrarAlta && <ModalNuevoUsuario onClose={() => setMostrarAlta(false)} />}
     </div>
@@ -118,37 +131,42 @@ function ModalNuevoUsuario({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Nuevo usuario</CardTitle>
-          <button onClick={onClose}><X size={20} className="text-muted-foreground" /></button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input placeholder="Nombre completo" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-          <Input type="email" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Input type="password" placeholder="Contraseña temporal" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Select value={rol} onChange={(e) => setRol(e.target.value as Rol)}>
-            <option value="cajero">Cajero</option>
-            <option value="almacenero">Almacenero</option>
-            <option value="gerente">Gerente</option>
-          </Select>
-          {rol !== 'gerente' && (
-            <Select value={idLocal} onChange={(e) => setIdLocal(e.target.value)}>
-              <option value="">Selecciona un local</option>
-              {locales?.map((l: any) => <option key={l.id_local} value={l.id_local}>{l.nombre}</option>)}
+    <Modal
+      open
+      onClose={onClose}
+      title="Nuevo usuario"
+      description="Se creará con una contraseña temporal."
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={crear} disabled={loading || ok}>{loading ? 'Creando…' : 'Crear usuario'}</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Field label="Nombre completo"><Input value={nombre} onChange={(e) => setNombre(e.target.value)} /></Field>
+        <Field label="Correo"><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@sangabriel.pe" /></Field>
+        <Field label="Contraseña temporal" hint="Mínimo 6 caracteres."><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Rol">
+            <Select value={rol} onChange={(e) => setRol(e.target.value as Rol)}>
+              <option value="cajero">Cajero</option>
+              <option value="almacenero">Almacenero</option>
+              <option value="gerente">Gerente</option>
             </Select>
+          </Field>
+          {rol !== 'gerente' && (
+            <Field label="Local">
+              <Select value={idLocal} onChange={(e) => setIdLocal(e.target.value)}>
+                <option value="">Selecciona un local</option>
+                {locales?.map((l: any) => <option key={l.id_local} value={l.id_local}>{l.nombre}</option>)}
+              </Select>
+            </Field>
           )}
-          {error && <p className="text-sm text-destructive bg-red-50 rounded-md p-2">{error}</p>}
-          {ok && <p className="text-sm text-white bg-success rounded-md p-2">Usuario creado correctamente.</p>}
-          <div className="flex justify-end gap-2 pt-2 border-t border-border">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button variant="accent" onClick={crear} disabled={loading}>
-              {loading ? 'Creando...' : 'Crear usuario'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+        {error && <Alert tone="error">{error}</Alert>}
+        {ok && <Alert tone="success">Usuario creado correctamente.</Alert>}
+      </div>
+    </Modal>
   )
 }

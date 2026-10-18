@@ -1,29 +1,28 @@
 import { useMemo } from 'react'
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
-} from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useNavigate } from 'react-router-dom'
 import { useVentasPorLocal, useLocales, useListaVentas } from '@/hooks/useVentas'
 import { useStockCritico, useListaCompras } from '@/hooks/useInventario'
 import { useProductos } from '@/hooks/useCatalogo'
 import { useAuth } from '@/features/auth/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BadgeEstado } from '@/components/ui/badge-estado'
+import { EmptyState, PageHeader, Skeleton, StatCard } from '@/components/ui/page'
+import { ChartLegend, ChartTooltip } from '@/components/ChartTooltip'
+import { useChartTheme } from '@/lib/chart'
+import { accesosParaRol } from '@/lib/accesos'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { StockCritico } from '@/lib/types'
 import {
-  DollarSign, AlertTriangle, Receipt, Boxes, Clock, ArrowRight, Package,
-  ShoppingBag, ArrowDownCircle, ArrowUpCircle, PackagePlus, BarChart3, ClipboardList, Zap,
+  Wallet, AlertTriangle, Receipt, Boxes, ArrowRight, Package, CalendarDays,
+  ArrowDownLeft, ArrowUpRight, BarChart3, CheckCircle2,
 } from 'lucide-react'
-
-const COLORES_LOCAL = ['#082B4C', '#FF7900', '#22B573', '#F59E0B']
-const COLORES_DONA = ['#082B4C', '#FF7900', '#22B573', '#F59E0B', '#718096', '#0EA5E9']
 
 export default function DashboardPage() {
   const { usuario } = useAuth()
   const navigate = useNavigate()
+  const chart = useChartTheme()
   const { data: ventasLocal, isLoading: cargandoVentas } = useVentasPorLocal()
   const { data: stockCritico, isLoading: cargandoStock } = useStockCritico()
   const { data: locales } = useLocales()
@@ -38,10 +37,10 @@ export default function DashboardPage() {
     return 'Buenas noches'
   }, [])
 
-  const fechaHoy = useMemo(
-    () => new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
-    []
-  )
+  const fechaHoy = useMemo(() => {
+    const f = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
+    return f.charAt(0).toUpperCase() + f.slice(1)
+  }, [])
 
   const kpis = useMemo(() => {
     const hoy = new Date().toISOString().slice(0, 10)
@@ -49,19 +48,29 @@ export default function DashboardPage() {
     const totalHoy = ventasHoy.reduce((acc, v) => acc + Number(v.total_vendido), 0)
     const numVentasHoy = ventasHoy.reduce((acc, v) => acc + v.num_ventas, 0)
     const ticketProm = numVentasHoy > 0 ? totalHoy / numVentasHoy : 0
-    return { totalHoy, numVentasHoy, ticketProm, alertas: (stockCritico ?? []).length, totalProductos: productos?.length ?? 0 }
+    const criticos = (stockCritico ?? []).filter((s: any) => s.estado === 'CRITICO').length
+    return { totalHoy, numVentasHoy, ticketProm, alertas: (stockCritico ?? []).length, criticos, totalProductos: productos?.length ?? 0 }
   }, [ventasLocal, stockCritico, productos])
 
   const serieDiaria = useMemo(() => {
     if (!ventasLocal) return []
     const porDia: Record<string, any> = {}
     for (const v of ventasLocal) {
-      const dia = v.dia.slice(5, 10)
-      porDia[dia] = porDia[dia] || { dia }
-      porDia[dia][v.local_nombre] = Number(v.total_vendido)
+      const fecha = v.dia.slice(0, 10)
+      porDia[fecha] = porDia[fecha] || {
+        fecha,
+        dia: new Intl.DateTimeFormat('es-PE', { day: '2-digit', month: 'short' }).format(new Date(fecha + 'T12:00:00')),
+      }
+      porDia[fecha][v.local_nombre] = Number(v.total_vendido)
     }
-    return Object.values(porDia).slice(-7)
+    return Object.values(porDia).sort((a: any, b: any) => a.fecha.localeCompare(b.fecha)).slice(-7)
   }, [ventasLocal])
+
+  // Color estable por local (posición en la lista de locales, no por ranking)
+  const seriesLocales = useMemo(
+    () => (locales ?? []).map((l: any, idx: number) => ({ key: l.id_local, name: l.nombre as string, color: chart.series[idx % chart.series.length] })),
+    [locales, chart.series]
+  )
 
   const porCategoria = useMemo(() => {
     if (!productos) return []
@@ -70,30 +79,34 @@ export default function DashboardPage() {
       const nombre = p.categoria?.nombre ?? 'Sin categoría'
       conteo[nombre] = (conteo[nombre] ?? 0) + 1
     }
-    return Object.entries(conteo)
-      .map(([nombre, cantidad]) => ({ nombre, cantidad }))
-      .sort((a, b) => b.cantidad - a.cantidad)
+    const ordenado = Object.entries(conteo).map(([nombre, cantidad]) => ({ nombre, cantidad })).sort((a, b) => b.cantidad - a.cantidad)
+    if (ordenado.length <= 6) return ordenado
+    const otros = ordenado.slice(5).reduce((acc, c) => acc + c.cantidad, 0)
+    return [...ordenado.slice(0, 5), { nombre: 'Otras', cantidad: otros }]
   }, [productos])
+  const maxCategoria = Math.max(1, ...porCategoria.map((c) => c.cantidad))
 
-  const stockBajoOrdenado = useMemo(() => {
-    return ((stockCritico ?? []) as StockCritico[])
-      .slice()
-      .sort((a, b) => a.stock_actual - b.stock_actual)
-      .slice(0, 5)
-  }, [stockCritico])
+  const stockBajoOrdenado = useMemo(
+    () => ((stockCritico ?? []) as StockCritico[]).slice().sort((a, b) => a.stock_actual - b.stock_actual).slice(0, 5),
+    [stockCritico]
+  )
 
   const actividadReciente = useMemo(() => {
     const deVentas = (ventas ?? []).map((v: any) => ({
       tipo: 'venta' as const,
       fecha: v.fecha,
-      texto: `${v.usuario?.nombre ?? 'Alguien'} registró una venta`,
-      detalle: `${formatCurrency(Number(v.total))} · ${v.local?.nombre}`,
+      quien: v.usuario?.nombre ?? 'Alguien',
+      accion: 'registró una venta',
+      detalle: v.local?.nombre,
+      monto: Number(v.total),
     }))
     const deCompras = (compras ?? []).map((c: any) => ({
       tipo: 'compra' as const,
       fecha: c.fecha,
-      texto: `${c.usuario?.nombre ?? 'Alguien'} registró una entrada`,
-      detalle: `${c.proveedor?.razon_social} · ${c.local?.nombre}`,
+      quien: c.usuario?.nombre ?? 'Alguien',
+      accion: 'registró una entrada',
+      detalle: `${c.proveedor?.razon_social ?? ''} · ${c.local?.nombre ?? ''}`,
+      monto: Number(c.total),
     }))
     return [...deVentas, ...deCompras]
       .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
@@ -101,133 +114,87 @@ export default function DashboardPage() {
   }, [ventas, compras])
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-navy">{saludo}, {usuario?.nombre?.split(' ')[0]} 👋</h1>
-          <p className="text-sm text-text-secondary">Aquí tienes el resumen de tus 4 locales en Los Olivos.</p>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-text-secondary bg-card border border-border rounded-xl px-4 py-2 capitalize">
-          <Clock size={16} /> Hoy, {fechaHoy}
-        </div>
+    <div className="page">
+      <PageHeader
+        title={`${saludo}, ${usuario?.nombre?.split(' ')[0] ?? ''}`}
+        description="Resumen de operación de los 4 locales en Los Olivos."
+        actions={
+          <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-[13px] font-medium text-muted-foreground shadow-xs">
+            <CalendarDays size={15} /> {fechaHoy}
+          </span>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
+        <StatCard
+          icon={Wallet} tone="primary" label="Ventas de hoy"
+          value={cargandoVentas ? <Skeleton className="h-8 w-28" /> : <span className="num">{formatCurrency(kpis.totalHoy)}</span>}
+          hint={`${kpis.numVentasHoy} transacciones`}
+        />
+        <StatCard
+          icon={Receipt} tone="info" label="Ticket promedio"
+          value={cargandoVentas ? <Skeleton className="h-8 w-24" /> : <span className="num">{formatCurrency(kpis.ticketProm)}</span>}
+          hint="Por transacción, hoy"
+        />
+        <StatCard icon={Boxes} label="Productos en catálogo" value={<span className="num">{kpis.totalProductos}</span>} hint="Activos e inactivos" />
+        <StatCard
+          icon={AlertTriangle} tone={kpis.alertas > 0 ? 'danger' : 'neutral'} label="Alertas de stock"
+          value={cargandoStock ? <Skeleton className="h-8 w-12" /> : <span className="num">{kpis.alertas}</span>}
+          hint={kpis.criticos > 0 ? `${kpis.criticos} en estado crítico` : 'Sin productos críticos'}
+        />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon={DollarSign} bg="#082B4C" label="Ventas de hoy" value={cargandoVentas ? '—' : formatCurrency(kpis.totalHoy)} />
-        <KpiCard icon={Receipt} bg="#FF7900" label="Ticket promedio" value={cargandoVentas ? '—' : formatCurrency(kpis.ticketProm)} />
-        <KpiCard icon={Boxes} bg="#22B573" label="Productos activos" value={String(kpis.totalProductos)} />
-        <KpiCard icon={AlertTriangle} bg="#EF4444" label="Alertas de stock" value={cargandoStock ? '—' : String(kpis.alertas)} />
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Ventas por local — últimos 7 días</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={serieDiaria}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="dia" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                {locales?.map((l: any, idx: number) => (
-                  <Line key={l.id_local} type="monotone" dataKey={l.nombre} stroke={COLORES_LOCAL[idx % COLORES_LOCAL.length]} strokeWidth={2} dot={false} />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Inventario por categoría</CardTitle></CardHeader>
-          <CardContent>
-            <div className="relative">
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie data={porCategoria} dataKey="cantidad" nameKey="nombre" innerRadius={55} outerRadius={85} paddingAngle={2}>
-                    {porCategoria.map((_, idx) => <Cell key={idx} fill={COLORES_DONA[idx % COLORES_DONA.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ top: -20 }}>
-                <p className="text-2xl font-bold text-navy">{kpis.totalProductos}</p>
-                <p className="text-xs text-text-secondary">productos</p>
-              </div>
+          <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>Ventas por local</CardTitle>
+              <CardDescription>Últimos 7 días con movimiento, en soles</CardDescription>
             </div>
-            <div className="space-y-1.5 mt-2">
-              {porCategoria.slice(0, 5).map((c, idx) => (
-                <div key={c.nombre} className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 text-navy">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORES_DONA[idx % COLORES_DONA.length] }} />
-                    {c.nombre}
-                  </span>
-                  <span className="text-text-secondary">{c.cantidad}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2"><AlertTriangle size={18} className="text-warning" /> Productos con stock bajo</CardTitle>
-            <button onClick={() => navigate('/inventario/stock')} className="text-sm text-orange font-medium flex items-center gap-1 hover:underline">
-              Ver todos <ArrowRight size={14} />
-            </button>
+            <ChartLegend items={seriesLocales} />
           </CardHeader>
-          <CardContent className="p-0">
-            {cargandoStock ? (
-              <p className="text-text-secondary text-sm p-5">Cargando...</p>
-            ) : stockBajoOrdenado.length === 0 ? (
-              <p className="text-text-secondary text-sm p-5">Sin alertas activas. Todos los locales están dentro de su stock mínimo.</p>
+          <CardContent className="pl-1 pr-4">
+            {cargandoVentas ? (
+              <Skeleton className="ml-4 h-[280px]" />
+            ) : serieDiaria.length === 0 ? (
+              <EmptyState icon={BarChart3} title="Aún no hay ventas" description="Las ventas registradas en el POS aparecerán aquí." />
             ) : (
-              <div className="divide-y divide-border">
-                {stockBajoOrdenado.map((s) => (
-                  <div key={`${s.id_producto}-${s.id_local}`} className="flex items-center justify-between px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-navy shrink-0">
-                        <Package size={16} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-navy">{s.producto_nombre}</p>
-                        <p className="text-xs text-text-secondary">{s.local_nombre}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-navy">{s.stock_actual} / {s.stock_minimo}</p>
-                      </div>
-                      <BadgeEstado estado={s.estado} />
-                      <Button size="sm" variant="accent" onClick={() => navigate('/compras')}>Ver</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={serieDiaria} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke={chart.grid} />
+                  <XAxis dataKey="dia" tick={{ fontSize: 12, fill: chart.tick }} tickLine={false} axisLine={{ stroke: chart.axis }} dy={6} />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: chart.tick }} tickLine={false} axisLine={false} width={64}
+                    tickFormatter={(v) => `S/ ${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`}
+                  />
+                  <Tooltip content={<ChartTooltip />} cursor={{ stroke: chart.axis, strokeWidth: 1 }} />
+                  {seriesLocales.map((s) => (
+                    <Line
+                      key={s.key} type="monotone" dataKey={s.name} name={s.name} stroke={s.color} strokeWidth={2} isAnimationActive={chart.animate}
+                      dot={false} activeDot={{ r: 4.5, strokeWidth: 2, stroke: chart.surface }}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2"><Clock size={18} className="text-navy" /> Actividad reciente</CardTitle>
-            <button onClick={() => navigate('/movimientos/salidas')} className="text-sm text-orange font-medium flex items-center gap-1 hover:underline">
-              Ver todas <ArrowRight size={14} />
-            </button>
+          <CardHeader>
+            <CardTitle>Catálogo por categoría</CardTitle>
+            <CardDescription>{kpis.totalProductos} productos en total</CardDescription>
           </CardHeader>
-          <CardContent className="p-0 max-h-[280px] overflow-y-auto divide-y divide-border">
-            {actividadReciente.length === 0 && <p className="text-text-secondary text-sm p-5">Sin actividad reciente.</p>}
-            {actividadReciente.map((a, idx) => (
-              <div key={idx} className="flex items-start gap-3 px-5 py-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${a.tipo === 'venta' ? 'bg-red-50 text-destructive' : 'bg-green-50 text-success'}`}>
-                  {a.tipo === 'venta' ? <ArrowUpCircle size={15} /> : <ArrowDownCircle size={15} />}
+          <CardContent className="space-y-3.5">
+            {porCategoria.length === 0 && <EmptyState title="Sin productos" />}
+            {porCategoria.map((c) => (
+              <div key={c.nombre}>
+                <div className="mb-1.5 flex items-center justify-between text-[13px]">
+                  <span className="truncate font-medium">{c.nombre}</span>
+                  <span className="num text-muted-foreground">{c.cantidad}</span>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm text-navy leading-snug">{a.texto}</p>
-                  <p className="text-xs text-text-secondary">{a.detalle}</p>
-                  <p className="text-[11px] text-text-secondary/70">{formatDate(a.fecha)}</p>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary/80" style={{ width: `${(c.cantidad / maxCategoria) * 100}%` }} />
                 </div>
               </div>
             ))}
@@ -235,45 +202,109 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Zap size={18} className="text-orange" /> Acceso rápido</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <AccesoRapido icon={PackagePlus} label="Nuevo producto" onClick={() => navigate('/inventario/productos')} />
-            <AccesoRapido icon={ShoppingBag} label="Registrar compra" onClick={() => navigate('/compras')} />
-            <AccesoRapido icon={BarChart3} label="Ver reportes" onClick={() => navigate('/reportes')} />
-            <AccesoRapido icon={ClipboardList} label="Ver inventario" onClick={() => navigate('/inventario/stock')} />
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex-row items-center justify-between">
+            <div>
+              <CardTitle>Productos por reponer</CardTitle>
+              <CardDescription>Stock por debajo del mínimo</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/inventario/stock')} className="text-primary">
+              Ver todos <ArrowRight size={14} />
+            </Button>
+          </CardHeader>
+          <div className="border-t border-border">
+            {cargandoStock ? (
+              <div className="space-y-3 p-5">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-10" />)}</div>
+            ) : stockBajoOrdenado.length === 0 ? (
+              <EmptyState icon={CheckCircle2} title="Todo en orden" description="Todos los locales están dentro de su stock mínimo." />
+            ) : (
+              <ul className="divide-y divide-border">
+                {stockBajoOrdenado.map((s) => {
+                  const pct = Math.min(100, (s.stock_actual / Math.max(1, s.stock_minimo)) * 100)
+                  return (
+                    <li key={`${s.id_producto}-${s.id_local}`} className="flex items-center gap-4 px-5 py-3.5">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                        <Package size={16} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{s.producto_nombre}</p>
+                        <p className="text-xs text-muted-foreground">{s.local_nombre}</p>
+                      </div>
+                      <div className="hidden w-32 sm:block">
+                        <div className="mb-1 flex justify-between text-xs">
+                          <span className="num font-semibold">{s.stock_actual}</span>
+                          <span className="num text-muted-foreground">mín. {s.stock_minimo}</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                          <div className={s.estado === 'CRITICO' ? 'h-full rounded-full bg-destructive' : 'h-full rounded-full bg-warning'} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                      <BadgeEstado estado={s.estado} />
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
+        </Card>
 
-function KpiCard({ icon: Icon, bg, label, value }: any) {
-  return (
-    <div className="stat-card">
-      <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white mb-2" style={{ backgroundColor: bg }}>
-        <Icon size={20} />
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <div>
+              <CardTitle>Actividad reciente</CardTitle>
+              <CardDescription>Ventas y entradas</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/movimientos/salidas')} className="text-primary">
+              Ver todo <ArrowRight size={14} />
+            </Button>
+          </CardHeader>
+          <div className="max-h-[320px] overflow-y-auto border-t border-border">
+            {actividadReciente.length === 0 && <EmptyState title="Sin actividad reciente" />}
+            <ul className="divide-y divide-border">
+              {actividadReciente.map((a, idx) => (
+                <li key={idx} className="flex items-start gap-3 px-5 py-3">
+                  <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${a.tipo === 'venta' ? 'bg-info-soft text-info' : 'bg-success-soft text-success'}`}>
+                    {a.tipo === 'venta' ? <ArrowUpRight size={15} /> : <ArrowDownLeft size={15} />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] leading-snug"><span className="font-semibold">{a.quien}</span> {a.accion}</p>
+                    <p className="truncate text-xs text-muted-foreground">{a.detalle}</p>
+                    <p className="mt-0.5 text-2xs text-muted-foreground/80">{formatDate(a.fecha)}</p>
+                  </div>
+                  <span className="num shrink-0 text-[13px] font-semibold">{formatCurrency(a.monto)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Card>
       </div>
-      <p className="text-xs text-text-secondary">{label}</p>
-      <p className="text-2xl font-bold text-navy">{value}</p>
+
+      <div>
+        <p className="eyebrow mb-3">Acceso rápido</p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {accesosParaRol(usuario?.rol ?? '').map((a) => (
+            <AccesoRapido key={a.to} icon={a.icon} label={a.label} desc={a.desc} onClick={() => navigate(a.to)} />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
 
-function AccesoRapido({ icon: Icon, label, onClick }: any) {
+function AccesoRapido({ icon: Icon, label, desc, onClick }: { icon: React.ElementType; label: string; desc: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 p-4 rounded-xl border border-border hover:border-orange hover:bg-orange/5 transition-colors text-left"
+      className="group flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-pop"
     >
-      <div className="w-9 h-9 rounded-lg bg-navy/5 flex items-center justify-center text-navy shrink-0">
-        <Icon size={17} />
-      </div>
-      <span className="text-sm font-medium text-navy">{label}</span>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+        <Icon size={18} />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold">{label}</span>
+        <span className="hidden truncate text-xs text-muted-foreground sm:block">{desc}</span>
+      </span>
     </button>
   )
 }

@@ -3,16 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>San Gabriel | Sistema de Gestión</title>
+    <title>San Gabriel · Gestión de Inventarios</title>
+    <meta name="description" content="Sistema de gestión de inventarios y ventas de Minimarkets San Gabriel S.A.C." />
 
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#C2410C" />
-    <link rel="icon" href="/icons/icon-192.png" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <meta name="theme-color" content="#0b1220" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="San Gabriel" />
+
+    <!-- Aplica el tema antes del primer pintado para evitar parpadeo -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('sg-theme') || 'system'
+          var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+          if (dark) document.documentElement.classList.add('dark')
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

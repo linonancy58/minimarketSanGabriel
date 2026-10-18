@@ -46,6 +46,7 @@ export interface Producto {
   stock_maximo: number
   precio_venta: number
   activo: boolean
+  imagen_url?: string | null
   categoria?: Categoria
   proveedor?: Proveedor
 }

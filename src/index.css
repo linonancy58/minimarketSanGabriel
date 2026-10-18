@@ -2,45 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Sistema de diseño San Gabriel.
+  Todos los colores viven aquí como tokens HSL; los componentes nunca usan hex directos.
+  Marca: verde esmeralda profundo sobre neutros fríos. Modo oscuro con sus propios pasos.
+*/
 @layer base {
   :root {
-    --background: 216 33% 97%;   /* #F5F7FA */
-    --foreground: 208 67% 22%;   /* #12395C */
-    --card: 0 0% 100%;           /* #FFFFFF */
-    --card-foreground: 208 67% 22%;
-    --primary: 209 81% 16%;      /* #082B4C */
+    --background: 220 20% 97.5%;
+    --foreground: 224 32% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 32% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 32% 12%;
+
+    --primary: 160 84% 27%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 216 33% 95%;
-    --secondary-foreground: 208 67% 22%;
-    --accent: 28 100% 50%;       /* #FF7900 */
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;    /* #EF4444 */
+    --primary-soft: 152 60% 94%;
+
+    --secondary: 220 16% 95%;
+    --secondary-foreground: 224 32% 16%;
+    --accent: 220 16% 95.5%;
+    --accent-foreground: 224 32% 12%;
+    --muted: 220 16% 95%;
+    --muted-foreground: 220 9% 44%;
+
+    --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
-    --muted: 216 20% 93%;
-    --muted-foreground: 216 15% 52%; /* #718096 */
-    --border: 216 15% 85%;
-    --radius: 0.5rem;
+    --destructive-soft: 0 86% 96.5%;
+    --success: 152 69% 29%;
+    --success-soft: 145 70% 94.5%;
+    --warning: 30 92% 38%;
+    --warning-soft: 43 100% 94%;
+    --info: 214 80% 46%;
+    --info-soft: 214 100% 96.5%;
+
+    --border: 220 14% 90%;
+    --input: 220 13% 86%;
+    --ring: 160 84% 27%;
+    --radius: 0.625rem;
+
+    --sidebar: 222 38% 9%;
+    --sidebar-foreground: 220 14% 72%;
+    --sidebar-muted: 220 10% 48%;
+    --sidebar-accent: 222 26% 15%;
+    --sidebar-border: 222 22% 16%;
+  }
+
+  .dark {
+    --background: 224 28% 6.5%;
+    --foreground: 220 20% 94%;
+    --card: 224 24% 9.5%;
+    --card-foreground: 220 20% 94%;
+    --popover: 224 24% 11%;
+    --popover-foreground: 220 20% 94%;
+
+    --primary: 156 64% 44%;
+    --primary-foreground: 224 32% 7%;
+    --primary-soft: 158 50% 13%;
+
+    --secondary: 224 20% 14%;
+    --secondary-foreground: 220 20% 92%;
+    --accent: 224 20% 14%;
+    --accent-foreground: 220 20% 94%;
+    --muted: 224 20% 13%;
+    --muted-foreground: 220 10% 62%;
+
+    --destructive: 0 72% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-soft: 0 50% 14%;
+    --success: 152 55% 52%;
+    --success-soft: 152 45% 12%;
+    --warning: 38 92% 58%;
+    --warning-soft: 36 60% 12%;
+    --info: 214 90% 66%;
+    --info-soft: 214 50% 14%;
+
+    --border: 224 18% 17%;
+    --input: 224 16% 21%;
+    --ring: 156 64% 44%;
+
+    --sidebar: 225 30% 5%;
+    --sidebar-foreground: 220 14% 70%;
+    --sidebar-muted: 220 10% 46%;
+    --sidebar-accent: 224 24% 11%;
+    --sidebar-border: 224 22% 12%;
   }
 }
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background text-foreground; font-family: 'Inter', system-ui, sans-serif; }
-  h1, h2, h3 { @apply tracking-tight; }
+  html { -webkit-tap-highlight-color: transparent; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 { @apply tracking-tight text-foreground; }
+  ::selection { @apply bg-primary/20; }
+  :focus-visible { @apply outline-none; }
+
+  /* Scrollbars discretos */
+  * { scrollbar-width: thin; scrollbar-color: hsl(var(--border)) transparent; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
-.stat-card { @apply bg-card rounded-lg shadow-sm border border-border p-5 flex flex-col gap-1 hover:shadow-md transition-shadow; }
-.badge-ok { @apply text-white px-2 py-0.5 rounded text-xs font-bold tracking-wide uppercase; background-color: #22B573; }
-.badge-bajo { @apply text-white px-2 py-0.5 rounded text-xs font-bold tracking-wide uppercase; background-color: #F59E0B; }
-.badge-critico { @apply text-white px-2 py-0.5 rounded text-xs font-bold tracking-wide uppercase; background-color: #EF4444; }
+@layer components {
+  /* Contenedor estándar de página */
+  .page { @apply mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 md:py-8 space-y-6 animate-fade-up; }
 
-.icon-btn {
-  @apply relative flex items-center justify-center w-10 h-10 rounded-md bg-white border border-border text-navy hover:border-navy hover:bg-secondary transition-colors;
-}
-.notif-dot {
-  @apply absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white;
-}
+  /* Etiqueta pequeña en mayúsculas para secciones */
+  .eyebrow { @apply text-2xs font-semibold uppercase tracking-[0.08em] text-muted-foreground; }
 
-.eyebrow {
-  @apply text-[11px] font-bold uppercase tracking-wider text-text-secondary;
+  /* Montos y cifras alineadas */
+  .num { font-variant-numeric: tabular-nums; }
 }

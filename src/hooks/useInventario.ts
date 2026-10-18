@@ -59,12 +59,14 @@ export function useRegistrarCompra() {
   const { usuario } = useAuth()
 
   return useMutation({
-    mutationFn: async ({ id_proveedor, items }: { id_proveedor: string; items: ItemCompra[] }) => {
-      if (!usuario?.id_local) throw new Error('El usuario no tiene local asignado')
+    mutationFn: async ({ id_proveedor, items, id_local }: { id_proveedor: string; items: ItemCompra[]; id_local?: string }) => {
+      // El gerente no tiene local fijo: elige en qué local ingresa la mercadería
+      const local = usuario?.id_local ?? id_local
+      if (!local) throw new Error('Selecciona el local donde ingresa la mercadería.')
 
       const { data: compra, error: errCompra } = await supabase
         .from('compra')
-        .insert({ id_proveedor, id_local: usuario.id_local, id_usuario: usuario.id_usuario })
+        .insert({ id_proveedor, id_local: local, id_usuario: usuario!.id_usuario })
         .select()
         .single()
       if (errCompra) throw errCompra
@@ -84,6 +86,7 @@ export function useRegistrarCompra() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['inventario'] })
       qc.invalidateQueries({ queryKey: ['stock-critico'] })
+      qc.invalidateQueries({ queryKey: ['lista-compras'] })
     },
   })
 }
